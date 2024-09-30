@@ -1,0 +1,11 @@
+# Allow all bots to crawl the site except specific directories
+User-agent: *
+Disallow: /node_modules/
+Disallow: /server.js
+Disallow: /package.json
+
+# Allow everything else
+Allow: /
+
+# Sitemap URL (add this if you have a sitemap)
+Sitemap: https://www.asztalosrobi.com/sitemap.xml

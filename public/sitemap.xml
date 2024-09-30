@@ -1,0 +1,8 @@
+sitemap:
+  homepage: "https://www.asztalosrobi.com/"
+  pages:
+    - url: "https://www.asztalosrobi.com/"
+      lastmod: "2024-09-01"
+      changefreq: "monthly"
+      priority: 1
+
