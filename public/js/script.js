@@ -1,3 +1,8 @@
+// Function to detect if the website is in desktop mode
+function isDesktopMode() {
+    return window.innerWidth >= 600; // Define desktop mode as screen width >= 600px
+}
+
 // Function to fetch the list of image filenames from the server
 async function fetchImageList() {
     try {
@@ -80,65 +85,86 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
     });
 }, observerOptions);
 
-// Function to display gallery images
-async function displayGalleryImages() {
-    console.log("Starting to display gallery images...");
-
-    const images = await fetchImageList();
-    const leftColumn = document.getElementById('left-column');
-    const rightColumn = document.getElementById('right-column');
-
-    let leftHeight = 0;
-    let rightHeight = 0;
-
-    console.log("Preloading images...");
-    const preloadedImages = await Promise.all(images.map(src => preloadImage(src)));
-
-    console.log("Appending images to the gallery...");
-    preloadedImages.forEach((imageData, index) => {
-        if (imageData) {
-            const { src, width, height, aspectRatio } = imageData;
-            const img = document.createElement('img');
-            img.dataset.src = src; // Use data-src for lazy loading
-            img.alt = `Image ${index + 1}`;
-            img.width = width;
-            img.height = height;
-            img.classList.add('gallery-image');
-
-            // Create a placeholder and append img to it
-            const placeholder = createPlaceholder(aspectRatio, img);
-
-            // Choose which column to append to
-            const column = leftHeight <= rightHeight ? leftColumn : rightColumn;
-
-            // Append placeholder (which contains img) to the column
-            column.appendChild(placeholder);
-
-            // Observe the image for lazy loading
-            imageObserver.observe(img);
-
-            // When image loads, show it
-            img.onload = () => {
-                img.style.opacity = '1'; // Fade in the image
-                console.log(`Image loaded and displayed: ${src}`);
-            };
-
-            // Update the column height
-            const adjustedHeight = column.clientWidth / aspectRatio;
-            if (column === leftColumn) {
-                leftHeight += adjustedHeight;
-            } else {
-                rightHeight += adjustedHeight;
-            }
-        } else {
-            console.error(`Image ${index + 1} failed to load and was not appended.`);
-        }
-    });
-
-    console.log("Finished appending all images.");
+// Function to fetch the list of image filenames from the server
+async function fetchImageList() {
+    try {
+        const response = await fetch('/api/images');
+        const images = await response.json();
+        return images.map((filename) => '/images/' + encodeURIComponent(filename));
+    } catch (error) {
+        console.error('Error fetching image list:', error);
+        return [];
+    }
 }
 
-displayGalleryImages();
+// Function to preload an image and get its aspect ratio
+function preloadImage(src) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ src, aspectRatio: img.naturalWidth / img.naturalHeight });
+        img.onerror = () => resolve(null);
+        img.src = src;
+    });
+}
+
+// Function to calculate the number of columns based on screen width
+function getColumnCount() {
+    const width = window.innerWidth;
+    if (width < 600) return 2; // 2 columns for small screens
+    if (width < 1200) return 3; // 3 columns for medium screens
+    return 4; // 4 columns for large screens
+}
+
+// Function to create columns dynamically
+function createColumns(container, columnCount) {
+    container.innerHTML = ''; // Clear existing columns
+    const columns = [];
+    for (let i = 0; i < columnCount; i++) {
+        const column = document.createElement('div');
+        column.className = 'gallery-column';
+        container.appendChild(column);
+        columns.push(column);
+    }
+    return columns;
+}
+
+// Function to distribute and display images
+async function displayGalleryImages() {
+    const images = await fetchImageList();
+    const galleryContainer = document.querySelector('.gallery-container');
+    const columnCount = getColumnCount();
+    const columns = createColumns(galleryContainer, columnCount);
+
+    const columnHeights = new Array(columnCount).fill(0); // Track column heights
+
+    for (const src of images) {
+        const imageData = await preloadImage(src);
+        if (imageData) {
+            const img = document.createElement('img');
+            img.src = imageData.src;
+            img.className = 'gallery-image';
+
+            // Find the shortest column and append the image
+            const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+            columns[shortestColumnIndex].appendChild(img);
+
+            // Update the column height based on the image aspect ratio
+            columnHeights[shortestColumnIndex] += columns[shortestColumnIndex].offsetWidth / imageData.aspectRatio;
+        }
+    }
+}
+
+// Recalculate and render gallery on window resize
+window.addEventListener('resize', () => {
+    displayGalleryImages();
+});
+
+// Initialize gallery
+document.addEventListener('DOMContentLoaded', () => {
+    displayGalleryImages();
+});
+
+
 
 
 // Function to animate the numbers in the statistics section
@@ -171,8 +197,8 @@ function animateNumbers() {
 }
 
 // Function to check if statistics section is in view and trigger the count-up
-function checkStatsVisibility() {
-    const statsSection = document.querySelector('.statistics-section');
+function checkStatsVisibilityMobile() {
+    const statsSection = document.querySelector('.statistics-section.mobile-view');
     const observerOptions = {
         root: null,
         rootMargin: '0px',
@@ -191,7 +217,26 @@ function checkStatsVisibility() {
     statsObserver.observe(statsSection); // Observe the statistics section
 }
 
-checkStatsVisibility(); // Initialize the visibility check
+function checkStatsVisibilityDesktop() {
+    const statsSection = document.querySelector('.statistics-section.desktop-view')
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1 // Trigger when 10% of the section is visible
+    };
+
+    const statsObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateNumbers(); // Start the animation
+                observer.unobserve(entry.target); // Stop observing once animation starts
+            }
+        });
+    }, observerOptions);
+
+    statsObserver.observe(statsSection); // Observe the statistics section
+}
+
 
 // Animate Navbar on Page Load
 window.addEventListener('load', () => {
@@ -260,3 +305,25 @@ const textElements = document.querySelectorAll('.float-fade-in-left');
 textElements.forEach(element => {
     textFadeObserver.observe(element);
 });
+
+
+// Initialize functionality based on mode
+function initializePage() {
+    if (isDesktopMode()) {
+        console.log("Initializing desktop mode...");
+        checkStatsVisibilityDesktop(); // Initialize animation observer
+    } else {
+        console.log("Initializing mobile mode...");
+        checkStatsVisibilityMobile();
+        // Add additional functionality for mobile mode if needed
+    }
+}
+
+// Event listener for resizing the window to reinitialize
+window.addEventListener('resize', () => {
+    initializePage();
+    console.log("Window resized. Reinitialized page.");
+});
+
+// Initial page load
+initializePage();

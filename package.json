@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/lordcsomi/szajko-robert-job#readme",
   "dependencies": {
-    "express": "^4.21.0"
+    "express": "^4.21.1",
+    "helmet": "^8.0.0"
   }
 }
