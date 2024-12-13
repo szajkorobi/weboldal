@@ -625,12 +625,87 @@ body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-
 /* Style the placeholder with a gray background */
 .image-placeholder {
     background-color: #d3d3d3;  /* Gray background for the placeholder */
     display: block;
 }
+
+.lightbox {
+    display: none; /* Hidden by default */
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto; /* Allow scroll if image is larger than viewport */
+    padding: 20px; /* Padding around the image area */
+}
+
+.lightbox-content {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: transparent;
+    overflow: hidden;
+}
+
+.lightbox-image {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain; 
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Navigation Buttons */
+.lightbox-close, 
+.lightbox-prev, 
+.lightbox-next {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 20px;
+    padding: 5px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    user-select: none; 
+    outline: none;
+    z-index: 1100; /* Ensure they're above the image */
+}
+
+.lightbox-close {
+    top: 20px;
+    right: 40px; /* Position away from the image area */
+}
+
+.lightbox-prev {
+    top: 50%;
+    left: 5%; /* Position arrow to the left side, outside the image area */
+    transform: translateY(-50%);
+}
+
+.lightbox-next {
+    top: 50%;
+    right: 5%; /* Position arrow to the right side, outside the image area */
+    transform: translateY(-50%);
+}
+
+/* Optional Hover Effects */
+.lightbox-prev:hover,
+.lightbox-next:hover,
+.lightbox-close:hover {
+    color: #E7A354; /* Accent color on hover */
+}
+
+
+
 
 /* Contact Section */
 .single-column {

@@ -154,17 +154,73 @@ async function displayGalleryImages() {
     }
 }
 
-// Recalculate and render gallery on window resize
-window.addEventListener('resize', () => {
-    displayGalleryImages();
-});
 
 // Initialize gallery
-document.addEventListener('DOMContentLoaded', () => {
-    displayGalleryImages();
+document.addEventListener('DOMContentLoaded', async () => {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.querySelector('.lightbox-image');
+    const closeBtn = document.querySelector('.lightbox-close');
+    const prevBtn = document.querySelector('.lightbox-prev');
+    const nextBtn = document.querySelector('.lightbox-next');
+    
+    closeLightbox(); // Close lightbox initially
+
+    await displayGalleryImages(); // Wait until images are displayed
+    console.log("Gallery initialized.");
+    const galleryImages = document.querySelectorAll('.gallery-image');
+    
+
+    let currentIndex = 0;
+
+    function openLightbox(index) {
+        currentIndex = index;
+        const imageSrc = galleryImages[index].src;
+        lightboxImage.src = imageSrc;
+        lightbox.style.display = 'flex';
+        console.log(`Lightbox opened for image ${index}`);
+    }
+
+    function closeLightbox() {
+        lightbox.style.display = 'none';
+    }
+
+    function showNextImage() {
+        currentIndex = (currentIndex + 1) % galleryImages.length;
+        lightboxImage.src = galleryImages[currentIndex].src;
+    }
+
+    function showPrevImage() {
+        currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
+        lightboxImage.src = galleryImages[currentIndex].src;
+    }
+
+    // Add click event listeners to gallery images AFTER they're in the DOM
+    galleryImages.forEach((img, index) => {
+        img.addEventListener('click', () => openLightbox(index));
+        console.log("Added click event listener to gallery image", index);
+    });
+
+    // Add event listeners for lightbox buttons
+    closeBtn.addEventListener('click', closeLightbox);
+    nextBtn.addEventListener('click', showNextImage);
+    prevBtn.addEventListener('click', showPrevImage);
+
+    // Close lightbox on background click
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (lightbox.style.display === 'flex') {
+            if (e.key === 'ArrowRight') showNextImage();
+            if (e.key === 'ArrowLeft') showPrevImage();
+            if (e.key === 'Escape') closeLightbox();
+        }
+    });
+
+    initializePage();
 });
-
-
 
 
 // Function to animate the numbers in the statistics section
