@@ -6,6 +6,18 @@ const helmet = require('helmet');
 const app = express();
 
 // Apply security headers with custom CSP to allow Google Maps iframe
+// Detect Facebook crawler
+app.use((req, res, next) => {
+  const userAgent = req.get('user-agent') || '';
+  if (userAgent.includes('facebookexternalhit') || userAgent.includes('Facebot')) {
+    // Ensure full content delivery for Facebook crawler
+    res.setHeader('Accept-Ranges', 'none');
+    res.setHeader('Cache-Control', 'no-transform');
+  }
+  next();
+});
+
+// Configure security headers
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -14,15 +26,34 @@ app.use(
         scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         frameSrc: ["'self'", "https://maps.google.com", "https://*.google.com"],
-        imgSrc: ["'self'", "data:", "https://maps.gstatic.com"],
-        connectSrc: ["'self'", "https://maps.googleapis.com"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://maps.gstatic.com",
+          "https://*.fbcdn.net",
+          "https://*.facebook.com"
+        ],
+        connectSrc: [
+          "'self'",
+          "https://maps.googleapis.com",
+          "https://*.facebook.com"
+        ],
         fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
       },
     },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }
   })
 );
+
+// Enable CORS for Facebook crawler
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://www.facebook.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  next();
+});
 
 // Serve static files from 'public'
 app.use(express.static('public'));
