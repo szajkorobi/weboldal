@@ -36,7 +36,14 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "https://maps.googleapis.com"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://maps.googleapis.com",
+          "https://*.google-analytics.com",
+          "https://*.googletagmanager.com",
+          "https://www.googletagmanager.com"
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         frameSrc: ["'self'", "https://maps.google.com", "https://*.google.com"],
         imgSrc: [
@@ -44,12 +51,17 @@ app.use(
           "data:",
           "https://maps.gstatic.com",
           "https://*.fbcdn.net",
-          "https://*.facebook.com"
+          "https://*.facebook.com",
+          "https://*.google-analytics.com",
+          "https://*.googletagmanager.com"
         ],
         connectSrc: [
           "'self'",
           "https://maps.googleapis.com",
-          "https://*.facebook.com"
+          "https://*.facebook.com",
+          "https://*.google-analytics.com",
+          "https://*.analytics.google.com",
+          "https://*.googletagmanager.com"
         ],
         fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
         objectSrc: ["'none'"],
