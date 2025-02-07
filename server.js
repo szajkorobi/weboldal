@@ -2,17 +2,30 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const helmet = require('helmet');
+const compression = require('compression');
 
 const app = express();
+
+// Enable compression
+app.use(compression());
 
 // Apply security headers with custom CSP to allow Google Maps iframe
 // Detect Facebook crawler
 app.use((req, res, next) => {
   const userAgent = req.get('user-agent') || '';
-  if (userAgent.includes('facebookexternalhit') || userAgent.includes('Facebot')) {
-    // Ensure full content delivery for Facebook crawler
-    res.setHeader('Accept-Ranges', 'none');
-    res.setHeader('Cache-Control', 'no-transform');
+  const isFacebookBot = userAgent.includes('facebookexternalhit') || userAgent.includes('Facebot');
+  
+  if (isFacebookBot) {
+    // Special handling for Facebook crawler
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length');
+    
+    // If requesting an image, ensure proper content type
+    if (req.path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      res.setHeader('Content-Type', `image/${RegExp.$1}`);
+    }
   }
   next();
 });
@@ -48,24 +61,38 @@ app.use(
   })
 );
 
-// Enable CORS for Facebook crawler
+// Configure static file serving
+const staticOptions = {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Special handling for images
+    if (filePath.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+      res.setHeader('Accept-Ranges', 'bytes');
+    }
+  }
+};
+
+// Handle www to non-www redirect
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://www.facebook.com');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  if (req.hostname.startsWith('www.')) {
+    const newUrl = `https://${req.hostname.slice(4)}${req.originalUrl}`;
+    return res.redirect(301, newUrl);
+  }
   next();
 });
 
-// Serve static files from 'public'
-app.use(express.static('public'));
+// Serve static files from 'public' with enhanced caching
+app.use(express.static('public', staticOptions));
 
-
-// Serve images from the 'images' directory
-app.use(
-  '/images',
-  express.static('images', {
-    maxAge: '1d', // Cache image files for 1 day
-  })
-);
+// Serve images from 'images' directory with enhanced caching
+app.use('/images', express.static('images', {
+  ...staticOptions,
+  index: false, // Disable directory listing
+  fallthrough: false // Return 404 for missing files
+}));
 
 // Serve robots.txt
 app.get('/robots.txt', (req, res) => {
